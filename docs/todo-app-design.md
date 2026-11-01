@@ -238,7 +238,7 @@
   - 若用户补完成一个较早实例，直接推进到“下一次不早于当前时间”的实例，跳过中间过期实例；
   - 未完成且已过期时保留为逾期任务，不重复生成新实例；
   - 次数用尽或超过截止日期时，写 `completed_at` 结束系列，任务进入已完成。
-- 完成幂等：完成请求携带当前实例的 `occurrenceKey` 与 `completionId`；服务端在 `todo.task_completions` 中以 `(task_id, occurrence_key)` 唯一约束防止同一实例被两台设备完成两次。撤销最近一次完成时按 `completionId` 恢复台账记录的旧到期时间、计数与序号。
+- 完成幂等：完成请求携带当前实例的 `occurrenceKey` 与 `completionId`；服务端在 `todo.task_completions` 中以 `(task_id, occurrence_key)` 唯一约束防止同一实例被两台设备完成两次。撤销最近一次完成时按 `completionId` 恢复台账记录的旧到期时间、计数、序号与上次完成时间。
 - 编辑/删除范围：MVP 仅支持“整个系列”；编辑规则以当前实例日期为基准重算后续，UI 必须明确提示影响范围。单次实例的例外编辑放到 P1。
 - 所有提醒随实例推进自动重算；旧实例提醒取消。
 - 边界规则：每月/每年按日期重复而目标日期不存在时，取该月最后一天（例如每月 31 日在 2 月取 28/29 日）；夏令时期间的不存在/重复本地时间按 §3.8 的规则处理。
@@ -524,7 +524,7 @@ erDiagram
 | todo.tasks | 见下方 DDL | 见下方索引 | 任务主表 |
 | todo.tags | id, user_id, name, color, version, deleted_at | UNIQUE(user_id, id)；名称部分唯一 | 标签 |
 | todo.task_tags | user_id, task_id, tag_id | 复合外键校验同租户；联合主键 (task_id, tag_id) | 多对多 |
-| todo.task_completions | id, user_id, task_id, occurrence_key, completed_at, device_id, previous_due_at, previous_due_date, previous_count_remaining, previous_seq | UNIQUE(task_id, occurrence_key) | 重复任务完成台账；服务端幂等/撤销，P2 统计；不参与客户端同步 |
+| todo.task_completions | id, user_id, task_id, occurrence_key, completed_at, device_id, previous_due_at, previous_due_date, previous_count_remaining, previous_seq, previous_last_completed_at | UNIQUE(task_id, occurrence_key) | 重复任务完成台账；服务端幂等/撤销，P2 统计；不参与客户端同步 |
 | notify.reminders | id, user_id, task_id, reminder_key, occurrence_key, remind_at, status, claimed_at, sent_at, attempt_count, created_at | 部分索引 (remind_at) WHERE status='pending'；UNIQUE(task_id, occurrence_key, reminder_key) | 服务端物化的提醒，不参与客户端同步；reminder_key 对应 reminder_spec.id |
 | todo.attachments | id, user_id, task_id, storage_key, filename, mime, size, checksum, deleted_at | (task_id) | 文件元数据 |
 | sync.change_log | user_id, seq, entity_type, entity_id, entity_version, op, changed_fields, device_id, created_at | 主键 (user_id, seq)；索引 (user_id, entity_type, entity_id, entity_version) | 增量同步日志，保留 30 天 |
@@ -604,6 +604,7 @@ CREATE TABLE todo.task_completions (
   previous_due_date date,
   previous_count_remaining smallint,
   previous_seq    integer,
+  previous_last_completed_at timestamptz,
   created_at      timestamptz NOT NULL DEFAULT now(),
   UNIQUE (task_id, occurrence_key),
   FOREIGN KEY (user_id, task_id) REFERENCES todo.tasks (user_id, id)
