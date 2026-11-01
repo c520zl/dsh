@@ -242,7 +242,7 @@
 - 编辑/删除范围：MVP 仅支持“整个系列”；编辑规则以当前实例日期为基准重算后续，UI 必须明确提示影响范围。单次实例的例外编辑放到 P1。
 - 所有提醒随实例推进自动重算；旧实例提醒取消。
 - 边界规则：每月/每年按日期重复而目标日期不存在时，取该月最后一天（例如每月 31 日在 2 月取 28/29 日）；夏令时期间的不存在/重复本地时间按 §3.8 的规则处理。
-- 完成历史：完成台账由服务端保存，P2 用于统计与回顾；MVP/P1 的已完成视图只展示一次性任务，重复任务保留最近一次完成时间（`last_completed_at`）。
+- 完成历史：完成台账由服务端保存，P2 用于统计与回顾；MVP/P1 的已完成视图展示 `completed_at` 非空的任务（包括已结束的重复系列），但不展示重复任务的历史实例明细。
 
 **验收要点**
 
@@ -525,7 +525,7 @@ erDiagram
 | todo.tags | id, user_id, name, color, version, deleted_at | UNIQUE(user_id, id)；名称部分唯一 | 标签 |
 | todo.task_tags | user_id, task_id, tag_id | 复合外键校验同租户；联合主键 (task_id, tag_id) | 多对多 |
 | todo.task_completions | id, user_id, task_id, occurrence_key, completed_at, device_id, previous_due_at, previous_due_date, previous_count_remaining, previous_seq, previous_last_completed_at | UNIQUE(task_id, occurrence_key) | 重复任务完成台账；服务端幂等/撤销，P2 统计；不参与客户端同步 |
-| notify.reminders | id, user_id, task_id, reminder_key, occurrence_key, remind_at, status, claimed_at, sent_at, attempt_count, created_at | 部分索引 (remind_at) WHERE status='pending'；UNIQUE(task_id, occurrence_key, reminder_key) | 服务端物化的提醒，不参与客户端同步；reminder_key 对应 reminder_spec.id |
+| notify.reminders | id, user_id, task_id, reminder_key, occurrence_key, remind_at, status, claimed_at, sent_at, attempt_count, created_at | 部分索引 (remind_at) WHERE status='pending'；UNIQUE(task_id, occurrence_key, reminder_key, remind_at) | 服务端物化的提醒，不参与客户端同步；reminder_key 对应 reminder_spec.id；改期时旧行取消、新行插入 |
 | todo.attachments | id, user_id, task_id, storage_key, filename, mime, size, checksum, deleted_at | (task_id) | 文件元数据 |
 | sync.change_log | user_id, seq, entity_type, entity_id, entity_version, op, changed_fields, device_id, created_at | 主键 (user_id, seq)；索引 (user_id, entity_type, entity_id, entity_version) | 增量同步日志，保留 30 天 |
 | sync.user_sync_state | user_id, current_seq | 主键 user_id | 每用户序号 |
@@ -625,7 +625,7 @@ CREATE TABLE notify.reminders (
   sent_at         timestamptz,
   attempt_count   smallint NOT NULL DEFAULT 0,
   created_at      timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (task_id, occurrence_key, reminder_key),
+  UNIQUE (task_id, occurrence_key, reminder_key, remind_at),
   FOREIGN KEY (user_id, task_id) REFERENCES todo.tasks (user_id, id)
 );
 CREATE INDEX reminders_pending ON notify.reminders (remind_at)
@@ -904,7 +904,7 @@ RETURNING r.id, r.user_id, r.task_id, r.occurrence_key;
 
 - 发送前再次检查任务未删除、未完成且 `occurrence_key` 仍与当前实例一致；不满足则标记 `canceled`，不推送。
 - 推送成功标记 `sent`；失败按 1 分钟、5 分钟、15 分钟重试 3 次，仍失败标记 `failed`；`processing` 超过 2 分钟未更新视为 worker 崩溃，由清理任务重置为 `pending` 后再次领取。
-- 同一提醒由唯一键 `(task_id, occurrence_key, reminder_key)` 与领取状态保证最多发送一次；极端网络重试仍可能重复，客户端按 `reminderId` 去重。
+- 同一提醒由唯一键 `(task_id, occurrence_key, reminder_key, remind_at)` 与领取状态保证最多发送一次；改期时旧行取消、新行插入；极端网络重试仍可能重复，客户端按 `reminderId` 去重。
 - 提醒滞后监控：`now() - remind_at` 的 P95 超过 5 分钟报警。
 
 **推送通道**
