@@ -453,6 +453,7 @@ pill：高 26，圆角 999，surface 背景，1px border；小屏可只显示图
 | 视觉稿 | [`ui/mockup.html`](ui/mockup.html) | 4 屏 1:1 HTML/CSS 方向稿 |
 | 截图 | [`ui/screens/`](ui/screens/) | PR/评审用 PNG |
 | 图标 | 待设计 | 统一 24px 线性图标，1.8px 描边 |
+| 字体 | [`ui/fonts/`](ui/fonts/) | Noto Sans SC，SIL OFL 1.1；仅视觉稿渲染使用 |
 
 ### 9.2 组件映射
 
