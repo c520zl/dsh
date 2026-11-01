@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.ExportMapper">
+  <insert id="insertJob" parameterType="com.todoapp.export.ExportJob">
+    INSERT INTO ops_export_jobs (id, user_id, status, file_format)
+    VALUES (#{id}, #{userId}, #{status}, #{fileFormat})
+  </insert>
+
+  <select id="selectJob" resultType="com.todoapp.export.ExportJob">
+    SELECT * FROM ops_export_jobs WHERE user_id = #{userId} AND id = #{id}
+  </select>
+
+  <select id="selectJobById" resultType="com.todoapp.export.ExportJob">
+    SELECT * FROM ops_export_jobs WHERE id = #{id}
+  </select>
+
+  <select id="selectPending" resultType="com.todoapp.export.ExportJob">
+    SELECT * FROM ops_export_jobs
+    WHERE status = 'pending' ORDER BY created_at ASC LIMIT #{limit}
+    FOR UPDATE SKIP LOCKED
+  </select>
+
+  <update id="markProcessing">
+    UPDATE ops_export_jobs SET status = 'processing' WHERE id = #{id}
+  </update>
+
+  <update id="markReady">
+    UPDATE ops_export_jobs SET status = 'ready', storage_key = #{storageKey},
+      expires_at = #{expiresAt}, error = NULL, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+
+  <update id="markFailed">
+    UPDATE ops_export_jobs SET status = 'failed', error = #{error}, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+
+  <update id="markExpired">
+    UPDATE ops_export_jobs SET status = 'expired', updated_at = NOW(3) WHERE id = #{id}
+  </update>
+
+  <update id="resetStaleProcessing">
+    UPDATE ops_export_jobs SET status = 'pending', updated_at = NOW(3)
+    WHERE status = 'processing' AND updated_at &lt; #{cutoff}
+  </update>
+
+  <delete id="deleteOld">
+    DELETE FROM ops_export_jobs WHERE created_at &lt; #{cutoff}
+  </delete>
+
+  <select id="selectExpired" resultType="com.todoapp.export.ExportJob">
+    SELECT * FROM ops_export_jobs WHERE created_at &lt; #{cutoff}
+  </select>
+</mapper>

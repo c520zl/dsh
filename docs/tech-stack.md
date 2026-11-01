@@ -3,19 +3,19 @@
 | 项目 | 内容 |
 | --- | --- |
 | 文档版本 | v1.0 |
-| 锁定日期 | 2026-11-01（Asia/Shanghai） |
+| 锁定日期 | 2026-11-02（Asia/Shanghai） |
 | 状态 | 版本基线；升级需走变更记录 |
 | 上游文档 | [`todo-app-design.md`](todo-app-design.md)、[`requirements.md`](requirements.md) |
 | 机器可读版本 | [`versions.json`](versions.json) |
 
-> 本文件锁定的是**直接依赖**与运行时版本。传递依赖由 `pnpm-lock.yaml` 固定；每次升级必须更新 `versions.json`、本文档和 lockfile。
+> 本文件锁定的是**直接依赖**与运行时版本。客户端传递依赖由 `pnpm-lock.yaml` 固定，后端由 Maven Wrapper + `pom.xml` 固定；每次升级必须更新 `versions.json`、本文档和对应 lockfile。
 
 ## 1. 锁定原则
 
 1. **精确版本**：`package.json` 只写 `X.Y.Z`，不使用 `^`/`~`/`latest`。
-2. **单一 lockfile**：pnpm workspace 一个 `pnpm-lock.yaml`；CI 使用 `--frozen-lockfile`。
-3. **运行时锁定**：`.nvmrc`、`engines.node`、Docker 基础镜像、PostgreSQL/Redis 镜像标签全部固定。
-4. **兼容优先于最新**：以 Expo SDK 58、React Native 0.88、NestJS 11 的兼容矩阵为准；不追最新大版本。
+2. **lockfile**：客户端 pnpm workspace 使用 `--frozen-lockfile`；后端使用 Maven Wrapper 3.9.16 与 `pom.xml`。
+3. **运行时锁定**：`.nvmrc`、`engines.node`、Docker 基础镜像、MySQL 镜像标签全部固定。
+4. **兼容优先于最新**：以 Expo SDK 58、React Native 0.88、Spring Boot 3.5 的兼容矩阵为准；不追最新大版本。
 5. **安全补丁例外**：高危漏洞可在 7 天内升级补丁版本，并记录原因与影响范围。
 6. **大版本升级**：必须写 ADR，跑完整 E2E、真机矩阵与回滚演练。
 
@@ -23,11 +23,13 @@
 
 | 组件 | 锁定版本 | 用途 | 备注 |
 | --- | --- | --- | --- |
-| Node.js | 24.22.2 LTS（Krypton） | API/Worker/工具链 | 与 RN 0.88 的 engines 兼容；Node 26.13.0 为下一升级候选 |
-| pnpm | 12.16.1 | 包管理 | `packageManager` 固定 |
-| PostgreSQL | 18.6 | 主数据库 | 官方当前稳定分支；启用 PITR |
-| Redis | 8.10.3 | BullMQ / 限流 / 缓存 | 2026-10-26 发布；容器标签 `redis:8.10.3` |
-| Docker 基础镜像 | `node:24.22.2-bookworm-slim` | API/Worker | 不使用 `node:lts` 浮动标签 |
+| JDK | 17.0.20 | API/Worker | LTS；Spring Boot 3 最低基线 |
+| Maven | 3.9.16 | 后端构建 | 项目自带 Maven Wrapper |
+| Spring Boot | 3.5.16 | API/Worker 框架 | 当前 3.5 稳定线 |
+| MySQL | 8.0.46 | 主数据库 | utf8mb4_0900_ai_ci；PITR |
+| Node.js | 24.22.2 LTS（Krypton） | 客户端工具链 | 与 RN 0.88 的 engines 兼容；Node 26.13.0 为下一升级候选 |
+| pnpm | 12.16.1 | 客户端包管理 | `packageManager` 固定 |
+| Docker 基础镜像 | `eclipse-temurin:17-jre` | API/Worker | 不使用浮动标签 |
 | Nginx/CDN | 托管服务 | 反向代理/静态 | 版本由云厂商锁定 |
 | Expo EAS | 托管 | 构建/提交 | 与 `eas-cli@27.2.0` 配套 |
 
@@ -76,45 +78,33 @@
 - 锁定 `typescript@6.0.3`（Expo SDK 58 模板使用的 6.0 系列）；
 - 不直接采用 `typescript@7.0.2`：TS 7 为原生编译器大版本，Expo/Metro 与 ESLint 工具链尚未完成验证；待 Expo SDK 升级时评估。
 
-## 4. 服务端（NestJS / Node.js）
+## 4. 服务端（Spring Boot 3 / JDK 17 / MySQL 8）
 
 | 包 | 锁定版本 | 用途 |
 | --- | --- | --- |
-| @nestjs/core | 11.2.8 | 核心 |
-| @nestjs/common | 11.2.8 | 公共装饰器/管道 |
-| @nestjs/platform-fastify | 11.2.8 | Fastify 适配 |
-| @nestjs/swagger | 11.4.7 | OpenAPI |
-| @nestjs/cli | 11.0.24 | 开发/构建 |
-| @fastify/static | 10.1.8 | Swagger UI 静态资源 |
-| nestjs-zod | 5.5.0 | Zod DTO/校验 |
-| zod | 4.6.7 | Schema |
-| drizzle-orm | 0.45.4 | ORM |
-| drizzle-kit | 0.31.11 | 迁移/生成 |
-| postgres | 4.0.0 | PostgreSQL 驱动 |
-| bullmq | 6.5.3 | 队列 |
-| ioredis | 6.0.0 | Redis 客户端 |
-| jose | 6.2.14 | JWT |
-| pino | 10.4.0 | 日志 |
-| nestjs-pino | 5.3.1 | Nest 日志集成 |
-| pino-pretty | 13.2.0 | 本地日志（dev） |
-| @opentelemetry/sdk-node | 0.300.0 | 追踪 |
-| @sentry/node | 11.10.0 | 错误 |
-| reflect-metadata | 0.2.2 | Nest 依赖 |
-| rxjs | 7.8.2 | Nest 依赖 |
-| typescript | 6.0.3 | 编译 |
-| @types/node | 24.19.2 | Node 类型 |
+| spring-boot-starter-web | 3.5.16 | REST / Fastify 替代 |
+| spring-boot-starter-validation | 3.5.16 | Jakarta Validation |
+| spring-boot-starter-security | 3.5.16 | 认证过滤器链 |
+| mybatis-plus-spring-boot3-starter | 3.5.18.1 | MyBatis-Plus 与 XML Mapper |
+| mysql-connector-j | Spring Boot 管理版本 | MySQL 驱动 |
+| flyway-core / flyway-mysql | Spring Boot 管理版本 | 数据库迁移 |
+| nimbus-jose-jwt | 10.10 | EdDSA JWT、OAuth JWKS |
+| tink | 1.24.0 | Nimbus Ed25519 签名实现依赖 |
+| lombok | Spring Boot 管理版本 | 实体/DTO 样板代码 |
+| spring-boot-starter-test | Spring Boot 管理版本 | JUnit 5 / MockMvc |
+| junit-jupiter / mockito | 随 starter | 单元/集成测试 |
 
-**为什么 NestJS 11 而不是 12**
+**为什么 Spring Boot 3.5 而不是 4.x**
 
-- `@nestjs/core` 最新为 12.3.2，但 `nestjs-zod@5.5.0` 的 peer 声明只支持 `@nestjs/common@^10 || ^11`、`@nestjs/swagger@^7 || ^8 || ^11`；
-- 锁定 NestJS 11.2.8 + Swagger 11.4.7 + nestjs-zod 5.5.0 是当前经过 peer 校验的组合；
-- 待 nestjs-zod / swagger 发布 NestJS 12 兼容版本后，再整体升级并跑集成测试。
+- 本项目锁定 JDK 17；Spring Boot 3.x 是当前经过 MyBatis-Plus 3.5 / Nimbus 10 验证的稳定组合；
+- Spring Boot 4 需要重新验证 MyBatis-Plus、Spring Security 6 与测试工具链，不在本次版本基线内。
 
-**为什么 PostgreSQL 18.6**
+**为什么 MySQL 8**
 
-- 官方 `versions.json` 显示 18 为当前稳定分支，最新 minor 为 6；
-- 18 提供更好的逻辑复制/性能与长期支持；托管服务均提供 18；
-- 14 于 2026-11-12 EOL，不作为新项目基线。
+- 按最新后端技术栈要求使用 MySQL 8.0.46；`DATETIME(3)` 统一存 UTC，`DATE` 存用户本地日历日期；
+- 原 PostgreSQL 设计中的 schema 前缀映射为表名前缀；`citext/jsonb/timestamptz` 分别用
+  `utf8mb4_0900_ai_ci`、`JSON`、`DATETIME(3)` 表达；
+- 每用户同步序号通过 `sync_user_sync_state` 行锁串行化；OTP 与限流状态改存 MySQL。
 
 ## 5. Web 与管理端
 
@@ -138,7 +128,7 @@ Web 端 MVP 只做官网/管理后台；完整 Web 应用为 P2。
 | prettier | 3.9.10 | 格式化 |
 | turbo | 2.11.10 | Monorepo 任务编排 |
 | vitest | 5.0.5 | 单元/集成测试 |
-| testcontainers | 12.2.1 | PostgreSQL 集成测试 |
+| JUnit 5 / MockMvc | 随 Spring Boot | 后端单元/集成测试（MySQL CI service） |
 | supertest | 7.3.1 | API 测试 |
 | fast-check | 4.10.2 | 同步属性测试 |
 | @playwright/test | 1.64.1 | Web/E2E、文档截图 |
@@ -190,11 +180,21 @@ auto-install-peers=true
 
 ### 7.2 CI 规则
 
+客户端：
+
 ```bash
 corepack enable
 corepack prepare pnpm@12.16.1 --activate
 pnpm install --frozen-lockfile
 pnpm lint && pnpm typecheck && pnpm test
+```
+
+后端：
+
+```bash
+cd backend
+./mvnw -B test
+./mvnw -B -DskipTests package
 ```
 
 - Node 版本由 `.nvmrc` + `actions/setup-node` 固定；
@@ -218,8 +218,9 @@ pnpm lint && pnpm typecheck && pnpm test
 | 能力 | 选型 | 版本/规格锁定 |
 | --- | --- | --- |
 | 计算 | Fly.io / Render（海外）或阿里云/腾讯云（国内） | API 2 实例起，Worker 1–2 实例 |
-| PostgreSQL | Neon / RDS / Supabase | PostgreSQL 18.6，PITR 7–14 天 |
-| Redis | Upstash / ElastiCache / 云 Redis | Redis 8.10.3 兼容 |
+| MySQL | 云数据库 MySQL / RDS / 阿里云 RDS | MySQL 8.0.46，PITR 7–14 天 |
+| JDK | 托管构建/运行环境 | Temurin 17.0.20 |
+| Maven | CI 缓存 | 3.9.16（项目自带 Maven Wrapper） |
 | 对象存储 | Cloudflare R2 / 阿里云 OSS | S3 API；版本由服务端锁定 |
 | 推送 | Expo Push / APNs / FCM / 国内厂商 | SDK 随 Expo 58 / 原生工程锁定 |
 | 邮件 | Resend / SES | API 版本在适配器中固定 |
@@ -231,26 +232,28 @@ pnpm lint && pnpm typecheck && pnpm test
 | --- | --- | --- |
 | Expo SDK 58 与 React 19.3.1 patch | 官方模板锁 19.3.0 | 保持 19.3.0，等待 Expo 验证 |
 | TypeScript 6 与部分 ESLint 插件 | 类型规则可能滞后 | 锁定 6.0.3；CI 跑 eslint 全量 |
-| NestJS 12 / nestjs-zod | peer 未声明支持 | 暂锁 NestJS 11；升级前查 peer |
+| Spring Boot 4 / MyBatis-Plus | 兼容性未验证 | 锁定 Spring Boot 3.5.16；升级前跑全量集成测试 |
 | Tailwind 4 与 NativeWind 4 | 未验证 | 锁 Tailwind 3.4.19 |
-| Redis 8.10 与 BullMQ 6 | 需验证脚本兼容 | staging 压测 + 队列集成测试 |
+| MySQL 8.0 与 Flyway | 版本/排序规则差异 | 锁定 utf8mb4_0900_ai_ci；staging 先执行迁移 |
 | Node 26 LTS | 生态验证不足 | 暂锁 Node 24.22.2，随 Expo 升级评估 |
-| PostgreSQL 18 扩展 | pg_trgm/citext 可用 | 迁移前在 staging 执行 `CREATE EXTENSION` |
+| Nimbus Ed25519 / Tink | 缺少 Tink 时无法签名 | 锁定 tink 1.24.0；CI 覆盖登录链路 |
 
 ## 10. 版本来源与复核
 
 - npm registry `latest` 查询时间：2026-11-01；
 - Node 官方发布索引：<https://nodejs.org/dist/index.json>；
-- PostgreSQL 官方版本信息：<https://www.postgresql.org/versions.json>；
-- Redis 最新 release：<https://github.com/redis/redis/releases>；
+- MySQL 官方版本信息：<https://dev.mysql.com/doc/relnotes/mysql/8.0/en/>；
+- Spring Boot 版本：<https://spring.io/projects/spring-boot>；
+- MyBatis-Plus 版本：<https://baomidou.com/>；
 - Expo SDK 58 发布说明：<https://expo.dev/changelog/sdk-58>；
 - 复核命令：
 
 ```bash
 node --version
 pnpm --version
-psql --version
-redis-server --version
+mysql --version
+java -version
+./backend/mvnw -version
 pnpm outdated
 ```
 

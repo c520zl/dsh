@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.TagMapper">
+  <select id="selectTags" resultType="com.todoapp.tag.Tag">
+    SELECT * FROM todo_tags WHERE user_id = #{userId} AND deleted_at IS NULL ORDER BY created_at ASC
+  </select>
+
+  <select id="selectTag" resultType="com.todoapp.tag.Tag">
+    SELECT * FROM todo_tags WHERE user_id = #{userId} AND id = #{id} AND deleted_at IS NULL
+  </select>
+
+  <select id="countByActiveName" resultType="int">
+    SELECT COUNT(*) FROM todo_tags
+    WHERE user_id = #{userId} AND active_name = #{name}
+    <if test="excludeId != null">AND id != #{excludeId}</if>
+  </select>
+
+  <insert id="insertTag" parameterType="com.todoapp.tag.Tag">
+    INSERT INTO todo_tags (id, user_id, name, color, version)
+    VALUES (#{id}, #{userId}, #{name}, #{color}, #{version})
+  </insert>
+
+  <update id="updateTag" parameterType="com.todoapp.tag.Tag">
+    UPDATE todo_tags SET name = #{name}, color = #{color}, version = #{version},
+      deleted_at = #{deletedAt}, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+</mapper>

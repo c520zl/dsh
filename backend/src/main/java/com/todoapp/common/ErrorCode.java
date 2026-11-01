@@ -1,0 +1,14 @@
+package com.todoapp.common;
+
+public enum ErrorCode {
+  VALIDATION_ERROR,
+  UNAUTHENTICATED,
+  FORBIDDEN,
+  NOT_FOUND,
+  VERSION_CONFLICT,
+  DELETED,
+  REBUILD_REQUIRED,
+  CURSOR_EXPIRED,
+  RATE_LIMITED,
+  INTERNAL
+}

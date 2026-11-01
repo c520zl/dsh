@@ -1,3 +1,7 @@
+> **实现更新（2026-11-02）**：后端已按最新要求切换为 Spring Boot 3 + JDK 17 + MySQL 8 + Maven 3.9 + MyBatis-Plus（XML）；
+> 运行与实现说明见 [`../backend/README.md`](../backend/README.md)，MySQL DDL 见 [`sql/001_init.mysql.sql`](sql/001_init.mysql.sql)。
+> 下文保留原系统设计基线（业务、同步、提醒与验收语义仍适用），服务端实现细节以新后端为准。
+
 # 待办事项管理 APP 系统设计方案
 
 | 项目 | 内容 |

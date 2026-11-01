@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.IdempotencyMapper">
+  <insert id="insertPlaceholder">
+    INSERT IGNORE INTO identity_idempotency_keys (user_id, idempotency_key, response)
+    VALUES (#{userId}, #{key}, 'null')
+  </insert>
+
+  <update id="updateResponse">
+    UPDATE identity_idempotency_keys SET response = #{response}
+    WHERE user_id = #{userId} AND idempotency_key = #{key}
+  </update>
+
+  <select id="selectResponse" resultType="java.lang.String">
+    SELECT response FROM identity_idempotency_keys
+    WHERE user_id = #{userId} AND idempotency_key = #{key}
+  </select>
+
+  <select id="selectResponseForUpdate" resultType="java.lang.String">
+    SELECT response FROM identity_idempotency_keys
+    WHERE user_id = #{userId} AND idempotency_key = #{key} FOR UPDATE
+  </select>
+  <delete id="deleteBefore">
+    DELETE FROM identity_idempotency_keys WHERE created_at &lt; #{before}
+  </delete>
+</mapper>

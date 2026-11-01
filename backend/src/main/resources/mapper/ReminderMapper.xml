@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.ReminderMapper">
+  <update id="cancelForTask">
+    UPDATE notify_reminders SET status = 'canceled'
+    WHERE user_id = #{userId} AND task_id = #{taskId} AND status IN ('pending', 'processing')
+  </update>
+
+  <insert id="upsertReminder" parameterType="com.todoapp.reminder.Reminder">
+    INSERT INTO notify_reminders
+      (id, user_id, task_id, reminder_key, occurrence_key, remind_at, status, attempt_count)
+    VALUES
+      (#{id}, #{userId}, #{taskId}, #{reminderKey}, #{occurrenceKey}, #{remindAt}, 'pending', 0)
+    ON DUPLICATE KEY UPDATE
+      status = IF(notify_reminders.status = 'sent', 'sent', 'pending'),
+      claimed_at = IF(notify_reminders.status = 'sent', notify_reminders.claimed_at, NULL),
+      sent_at = IF(notify_reminders.status = 'sent', notify_reminders.sent_at, NULL),
+      attempt_count = IF(notify_reminders.status = 'sent', notify_reminders.attempt_count, 0)
+  </insert>
+
+  <select id="selectPendingForTask" resultType="com.todoapp.reminder.Reminder">
+    SELECT * FROM notify_reminders
+    WHERE user_id = #{userId} AND task_id = #{taskId} AND status IN ('pending', 'processing')
+  </select>
+
+  <select id="selectDueForUpdate" resultType="com.todoapp.reminder.Reminder">
+    SELECT * FROM notify_reminders
+    WHERE status = 'pending' AND remind_at &lt;= #{now}
+    ORDER BY remind_at ASC LIMIT #{limit}
+    FOR UPDATE SKIP LOCKED
+  </select>
+
+  <update id="markProcessing">
+    UPDATE notify_reminders
+    SET status = 'processing', claimed_at = #{claimedAt}, attempt_count = #{attemptCount}
+    WHERE id = #{id}
+  </update>
+
+  <update id="markStatus">
+    UPDATE notify_reminders SET status = #{status}, sent_at = #{sentAt} WHERE id = #{id}
+  </update>
+
+  <update id="reschedule">
+    UPDATE notify_reminders
+    SET status = #{status}, remind_at = #{remindAt}, claimed_at = #{claimedAt}
+    WHERE id = #{id}
+  </update>
+
+  <update id="markLocalDelivered">
+    UPDATE notify_reminders
+    SET status = 'sent', sent_at = #{deliveredAt}
+    WHERE user_id = #{userId} AND reminder_key = #{reminderKey}
+      AND occurrence_key = #{occurrenceKey}
+      AND status IN ('pending', 'processing', 'failed')
+  </update>
+
+  <update id="expireBefore">
+    UPDATE notify_reminders SET status = 'expired'
+    WHERE status = 'pending' AND remind_at &lt; #{cutoff}
+  </update>
+
+  <update id="resetStaleProcessing">
+    UPDATE notify_reminders SET status = 'pending', claimed_at = NULL
+    WHERE status = 'processing' AND claimed_at &lt; #{cutoff}
+  </update>
+
+  <select id="selectForUser" resultType="com.todoapp.reminder.Reminder">
+    SELECT * FROM notify_reminders WHERE user_id = #{userId} ORDER BY created_at ASC
+  </select>
+
+  <delete id="deleteOld">
+    DELETE FROM notify_reminders
+    WHERE status IN ('sent', 'failed', 'canceled', 'expired') AND created_at &lt; #{cutoff}
+  </delete>
+</mapper>
