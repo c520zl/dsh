@@ -11,6 +11,16 @@
 
 > 本文档由自动化代理起草，作为评审与开发的基线。技术版本以落地时的稳定版为准；文中的假设条件见 §1.5，需要业务方确认的问题见 §7.2。
 
+## 详细设计文档
+
+| 文档 | 内容 |
+| --- | --- |
+| [`requirements.md`](requirements.md) | 详细需求、规则、验收场景与发布门槛 |
+| [`api/openapi.yaml`](api/openapi.yaml) | REST 与同步接口规范（OpenAPI 3） |
+| [`database.md`](database.md) / [`sql/001_init.sql`](sql/001_init.sql) | 数据库字段、约束、索引与初始化 DDL |
+| [`tech-stack.md`](tech-stack.md) / [`versions.json`](versions.json) | 锁定版本与升级策略 |
+| [`ui-design.md`](ui-design.md) / [`ui/`](ui/) | UI 规范、设计 token 与视觉稿 |
+
 ## 0. 方案摘要
 
 - **产品**：面向个人的跨端待办应用，离线优先。MVP 聚焦“快速记录、今日安排、提醒、重复任务、多端同步”五个核心闭环。
@@ -533,7 +543,7 @@ erDiagram
 | ops.export_jobs | id, user_id, status, format, storage_key, expires_at | (user_id, created_at) | 异步导出 |
 | ops.audit_log | id, user_id, event, ip_hash, metadata, created_at | (user_id, created_at) | 安全审计，不含任务内容 |
 
-任务主表、完成台账与变更日志的简化 DDL：
+任务主表、完成台账与变更日志的简化 DDL（完整字段与约束以 [`database.md`](database.md) 和 [`sql/001_init.sql`](sql/001_init.sql) 为准）：
 
 ```sql
 -- todo.tasks
