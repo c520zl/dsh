@@ -57,7 +57,9 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "typescript": "6.0.3",
-    "@types/node": "24.19.2"
+    "@types/node": "24.19.2",
+    "fastify": "5.12.7",
+    "luxon": "3.7.2"
   },
   "web": {
     "next": "16.4.3",
@@ -76,6 +78,13 @@
     "fast-check": "4.10.2",
     "@playwright/test": "1.64.1",
     "@redocly/cli": "2.72.1",
-    "eas-cli": "27.2.0"
+    "eas-cli": "27.2.0",
+    "@nestjs/testing": "11.2.8",
+    "@swc/core": "1.16.21",
+    "unplugin-swc": "2.0.0",
+    "@types/luxon": "3.7.6",
+    "@eslint/js": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "typescript-eslint": "8.72.1"
   }
 }

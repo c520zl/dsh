@@ -131,6 +131,9 @@ CREATE INDEX lists_user_sort_idx ON todo.lists (user_id, sort_rank)
 CREATE UNIQUE INDEX lists_one_default
   ON todo.lists (user_id)
   WHERE is_default AND deleted_at IS NULL;
+CREATE UNIQUE INDEX lists_name_active
+  ON todo.lists (user_id, lower(name))
+  WHERE deleted_at IS NULL;
 
 ALTER TABLE identity.user_settings
   ADD CONSTRAINT user_settings_default_list_fk

@@ -869,6 +869,32 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/export/{exportId}/download:
+    parameters:
+      - $ref: '#/components/parameters/ExportId'
+    get:
+      tags: [Export]
+      operationId: downloadExport
+      summary: 下载导出文件（本地存储适配器）
+      description: |
+        本地/对象存储适配器提供的下载入口；生产部署可替换为预签名对象存储 URL。
+        下载链接 24 小时有效，过期或不存在时返回 404。
+      responses:
+        '200':
+          description: 导出文件内容
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+            text/csv:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/stats/summary:
     get:
       tags: [Stats]

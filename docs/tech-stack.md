@@ -83,6 +83,8 @@
 | @nestjs/core | 11.2.8 | 核心 |
 | @nestjs/common | 11.2.8 | 公共装饰器/管道 |
 | @nestjs/platform-fastify | 11.2.8 | Fastify 适配 |
+| fastify | 5.12.7 | HTTP 适配器（Nest peer） |
+| luxon | 3.7.2 | 时区/夏令时墙钟计算与提醒物化 |
 | @nestjs/swagger | 11.4.7 | OpenAPI |
 | @nestjs/cli | 11.0.24 | 开发/构建 |
 | @fastify/static | 10.1.8 | Swagger UI 静态资源 |
@@ -142,6 +144,11 @@ Web 端 MVP 只做官网/管理后台；完整 Web 应用为 P2。
 | supertest | 7.3.1 | API 测试 |
 | fast-check | 4.10.2 | 同步属性测试 |
 | @playwright/test | 1.64.1 | Web/E2E、文档截图 |
+| @nestjs/testing | 11.2.8 | 集成测试模块 |
+| @swc/core / unplugin-swc | 1.16.21 / 2.0.0 | Vitest 编译 Nest 装饰器元数据 |
+| typescript-eslint | 8.72.1 | TypeScript 静态检查 |
+| @eslint/js / eslint-config-prettier | 9.39.5 / 10.1.8 | ESLint 9 Flat Config |
+| @types/luxon | 3.7.6 | Luxon 类型 |
 | @redocly/cli | 2.72.1 | OpenAPI 校验 |
 | eas-cli | 27.2.0 | 移动端构建/提交 |
 

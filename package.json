@@ -1,0 +1,31 @@
+{
+  "name": "todo-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Todo App monorepo (backend first)",
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": "24.22.2"
+  },
+  "scripts": {
+    "build": "pnpm --filter @todo/api build",
+    "dev": "pnpm --filter @todo/api dev",
+    "worker": "pnpm --filter @todo/api worker",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm --filter @todo/api typecheck",
+    "test": "pnpm --filter @todo/api test",
+    "test:unit": "pnpm --filter @todo/api test:unit",
+    "test:integration": "pnpm --filter @todo/api test:integration",
+    "db:migrate": "pnpm --filter @todo/api db:migrate"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

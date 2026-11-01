@@ -184,6 +184,7 @@ erDiagram
 
 - `UNIQUE (user_id, id)`（复合外键需要）；
 - `lists_one_default`：`UNIQUE (user_id) WHERE is_default AND deleted_at IS NULL`；
+- `lists_name_active`：`UNIQUE (user_id, lower(name)) WHERE deleted_at IS NULL`（用户内不区分大小写唯一）；
 - `(user_id, sort_rank) WHERE deleted_at IS NULL`。
 
 ### 3.7 todo.tasks

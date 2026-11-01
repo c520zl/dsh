@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: todo
+      POSTGRES_PASSWORD: todo
+      POSTGRES_DB: todo_dev
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U todo -d todo_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - todo-pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:8.10.3
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  todo-pgdata:
