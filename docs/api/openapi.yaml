@@ -892,7 +892,7 @@ components:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: dsh_session
+      name: todo_session
   parameters:
     DeviceId:
       name: deviceId
