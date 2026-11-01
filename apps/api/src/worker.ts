@@ -1,15 +1,14 @@
+import './config/bootstrap';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { Logger } from 'nestjs-pino';
 import { APP_CONFIG, type AppConfig } from './config/config';
-import { loadDotEnv } from './config/load-env';
 import { CleanupService } from './core/cleanup.service';
 import { ExportService } from './modules/export/export.service';
 import { ReminderService } from './core/reminder.service';
 import { WorkerModule } from './worker.module';
 
 async function bootstrap(): Promise<void> {
-  loadDotEnv();
   const app = await NestFactory.createApplicationContext(WorkerModule, {
     bufferLogs: true,
   });

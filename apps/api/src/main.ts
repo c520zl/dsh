@@ -1,3 +1,4 @@
+import './config/bootstrap';
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
@@ -5,10 +6,8 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { APP_CONFIG, loadConfig } from './config/config';
-import { loadDotEnv } from './config/load-env';
 
 async function bootstrap(): Promise<void> {
-  loadDotEnv();
   loadConfig();
   const adapter = new FastifyAdapter({
     trustProxy: process.env.TRUST_PROXY === 'true' || process.env.TRUST_PROXY === '1',
