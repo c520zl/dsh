@@ -1,3 +1,6 @@
+-- 历史 PostgreSQL 设计基线。当前 Spring Boot 后端使用 MySQL 8，
+-- 可执行 DDL 见同目录 001_init.mysql.sql。
+
 -- =============================================================================
 -- Todo App — 001_init.sql
 -- PostgreSQL 18+

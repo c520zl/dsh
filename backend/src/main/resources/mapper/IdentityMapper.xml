@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.IdentityMapper">
+
+  <select id="selectUserById" resultType="com.todoapp.auth.User">
+    SELECT * FROM identity_users WHERE id = #{id}
+  </select>
+
+  <select id="selectActiveUserByEmail" resultType="com.todoapp.auth.User">
+    SELECT * FROM identity_users WHERE email = #{email} AND deleted_at IS NULL LIMIT 1
+  </select>
+
+  <select id="selectAnyUserByEmail" resultType="com.todoapp.auth.User">
+    SELECT * FROM identity_users WHERE email = #{email}
+    ORDER BY (deleted_at IS NULL) DESC, created_at DESC LIMIT 1
+  </select>
+
+  <insert id="insertUser" parameterType="com.todoapp.auth.User">
+    INSERT INTO identity_users
+      (id, email, display_name, avatar, timezone, locale, auth_version)
+    VALUES
+      (#{id}, #{email}, #{displayName}, #{avatar}, #{timezone}, #{locale}, #{authVersion})
+  </insert>
+
+  <update id="updateUser" parameterType="com.todoapp.auth.User">
+    UPDATE identity_users SET
+      email = #{email}, display_name = #{displayName}, avatar = #{avatar},
+      timezone = #{timezone}, locale = #{locale}, auth_version = #{authVersion},
+      deleted_at = #{deletedAt}, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+
+  <update id="updateUserAuthVersion">
+    UPDATE identity_users SET auth_version = #{authVersion}, updated_at = NOW(3) WHERE id = #{id}
+  </update>
+
+  <update id="softDeleteUser">
+    UPDATE identity_users SET deleted_at = #{deletedAt}, updated_at = NOW(3) WHERE id = #{id}
+  </update>
+
+  <select id="selectIdentity" resultType="com.todoapp.auth.AuthIdentity">
+    SELECT * FROM identity_auth_identities
+    WHERE provider = #{provider} AND provider_user_id = #{providerUserId} LIMIT 1
+  </select>
+
+  <insert id="insertIdentity" parameterType="com.todoapp.auth.AuthIdentity">
+    INSERT INTO identity_auth_identities (id, user_id, provider, provider_user_id)
+    VALUES (#{id}, #{userId}, #{provider}, #{providerUserId})
+  </insert>
+
+  <select id="selectSettings" resultType="com.todoapp.me.UserSettings">
+    SELECT * FROM identity_user_settings WHERE user_id = #{userId}
+  </select>
+
+  <insert id="insertSettings" parameterType="com.todoapp.me.UserSettings">
+    INSERT INTO identity_user_settings
+      (user_id, theme, accent, week_start, default_list_id, default_reminder_time,
+       time_format, quiet_hours_start, quiet_hours_end, notification_prefs, version)
+    VALUES
+      (#{userId}, #{theme}, #{accent}, #{weekStart}, #{defaultListId}, #{defaultReminderTime},
+       #{timeFormat}, #{quietHoursStart}, #{quietHoursEnd}, #{notificationPrefs}, #{version})
+  </insert>
+
+  <update id="updateSettings" parameterType="com.todoapp.me.UserSettings">
+    UPDATE identity_user_settings SET
+      theme = #{theme}, accent = #{accent}, week_start = #{weekStart},
+      default_list_id = #{defaultListId}, default_reminder_time = #{defaultReminderTime},
+      time_format = #{timeFormat}, quiet_hours_start = #{quietHoursStart},
+      quiet_hours_end = #{quietHoursEnd}, notification_prefs = #{notificationPrefs},
+      version = #{version}, updated_at = NOW(3)
+    WHERE user_id = #{userId}
+  </update>
+
+  <select id="selectDevice" resultType="com.todoapp.auth.Device">
+    SELECT * FROM identity_devices WHERE id = #{id}
+  </select>
+
+  <select id="selectDeviceForUser" resultType="com.todoapp.auth.Device">
+    SELECT * FROM identity_devices WHERE id = #{id} AND user_id = #{userId}
+  </select>
+
+  <select id="selectMatchingDevice" resultType="com.todoapp.auth.Device">
+    SELECT * FROM identity_devices
+    WHERE user_id = #{userId} AND name = #{name} AND platform = #{platform}
+      AND revoked_at IS NULL
+      <choose>
+        <when test="appVersion == null">AND app_version IS NULL</when>
+        <otherwise>AND app_version = #{appVersion}</otherwise>
+      </choose>
+      <choose>
+        <when test="osVersion == null">AND os_version IS NULL</when>
+        <otherwise>AND os_version = #{osVersion}</otherwise>
+      </choose>
+    LIMIT 1
+  </select>
+
+  <select id="selectDevices" resultType="com.todoapp.auth.Device">
+    SELECT * FROM identity_devices WHERE user_id = #{userId}
+    <if test="!includeRevoked">AND revoked_at IS NULL</if>
+    ORDER BY last_seen_at DESC
+  </select>
+
+  <select id="selectActiveDevices" resultType="com.todoapp.auth.Device">
+    SELECT * FROM identity_devices
+    WHERE user_id = #{userId} AND revoked_at IS NULL AND push_token IS NOT NULL
+    ORDER BY last_seen_at DESC
+  </select>
+
+  <select id="countActiveDevices" resultType="int">
+    SELECT COUNT(*) FROM identity_devices WHERE user_id = #{userId} AND revoked_at IS NULL
+  </select>
+
+  <insert id="insertDevice" parameterType="com.todoapp.auth.Device">
+    INSERT INTO identity_devices
+      (id, user_id, name, platform, app_version, os_version, push_token, push_provider,
+       auth_version, last_seen_at)
+    VALUES
+      (#{id}, #{userId}, #{name}, #{platform}, #{appVersion}, #{osVersion}, #{pushToken},
+       #{pushProvider}, #{authVersion}, #{lastSeenAt})
+  </insert>
+
+  <update id="updateDevice" parameterType="com.todoapp.auth.Device">
+    UPDATE identity_devices SET
+      name = #{name}, app_version = #{appVersion}, os_version = #{osVersion},
+      push_token = #{pushToken}, push_provider = #{pushProvider},
+      auth_version = #{authVersion}, last_seen_at = #{lastSeenAt},
+      revoked_at = #{revokedAt}, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+
+  <update id="updateDeviceLastSeen">
+    UPDATE identity_devices SET last_seen_at = #{lastSeenAt} WHERE id = #{id}
+  </update>
+
+  <update id="revokeDevice">
+    UPDATE identity_devices SET revoked_at = #{revokedAt}, auth_version = auth_version + 1,
+      push_token = NULL, push_provider = NULL, updated_at = NOW(3)
+    WHERE id = #{id}
+  </update>
+
+  <update id="revokeAllDevices">
+    UPDATE identity_devices SET revoked_at = #{revokedAt}, auth_version = auth_version + 1,
+      push_token = NULL, push_provider = NULL, updated_at = NOW(3)
+    WHERE user_id = #{userId} AND revoked_at IS NULL
+  </update>
+
+  <select id="selectRefreshTokenByHash" resultType="com.todoapp.auth.RefreshToken">
+    SELECT * FROM identity_refresh_tokens WHERE token_hash = #{tokenHash} LIMIT 1
+  </select>
+
+  <select id="selectRefreshTokenForUpdate" resultType="com.todoapp.auth.RefreshToken">
+    SELECT * FROM identity_refresh_tokens WHERE id = #{id} FOR UPDATE
+  </select>
+
+  <insert id="insertRefreshToken" parameterType="com.todoapp.auth.RefreshToken">
+    INSERT INTO identity_refresh_tokens
+      (id, user_id, device_id, family_id, replaced_by_id, token_hash, expires_at)
+    VALUES
+      (#{id}, #{userId}, #{deviceId}, #{familyId}, #{replacedById}, #{tokenHash}, #{expiresAt})
+  </insert>
+
+  <update id="rotateRefreshToken">
+    UPDATE identity_refresh_tokens SET replaced_by_id = #{replacedById}, rotated_at = #{rotatedAt}
+    WHERE id = #{id}
+  </update>
+
+  <update id="revokeTokenFamily">
+    UPDATE identity_refresh_tokens SET revoked_at = #{revokedAt}
+    WHERE family_id = #{familyId} AND revoked_at IS NULL
+  </update>
+
+  <update id="revokeTokensForDevice">
+    UPDATE identity_refresh_tokens SET revoked_at = #{revokedAt}
+    WHERE user_id = #{userId} AND device_id = #{deviceId} AND revoked_at IS NULL
+  </update>
+
+  <update id="revokeAllTokensForUser">
+    UPDATE identity_refresh_tokens SET revoked_at = #{revokedAt}
+    WHERE user_id = #{userId} AND revoked_at IS NULL
+  </update>
+
+  <select id="selectOtp" resultType="com.todoapp.auth.OtpCode">
+    SELECT * FROM identity_otp_codes WHERE email = #{email}
+  </select>
+
+  <insert id="upsertOtp" parameterType="com.todoapp.auth.OtpCode">
+    INSERT INTO identity_otp_codes
+      (email, code_hash, attempts, expires_at, last_sent_at)
+    VALUES
+      (#{email}, #{codeHash}, #{attempts}, #{expiresAt}, #{lastSentAt})
+    ON DUPLICATE KEY UPDATE
+      code_hash = VALUES(code_hash), attempts = VALUES(attempts),
+      expires_at = VALUES(expires_at), last_sent_at = VALUES(last_sent_at)
+  </insert>
+
+  <update id="updateOtpAttempts">
+    UPDATE identity_otp_codes SET attempts = #{attempts} WHERE email = #{email}
+  </update>
+
+  <delete id="deleteOtp">
+    DELETE FROM identity_otp_codes WHERE email = #{email}
+  </delete>
+
+  <update id="consumeOtp">
+    UPDATE identity_otp_codes SET code_hash = '', attempts = 0, expires_at = #{now}
+    WHERE email = #{email}
+  </update>
+
+  <insert id="incrementRateLimit">
+    INSERT INTO identity_auth_rate_limits (bucket, window_start, counter)
+    VALUES (#{bucket}, #{windowStart}, 1)
+    ON DUPLICATE KEY UPDATE counter = counter + 1
+  </insert>
+
+  <select id="selectRateLimit" resultType="java.lang.Integer">
+    SELECT counter FROM identity_auth_rate_limits
+    WHERE bucket = #{bucket} AND window_start = #{windowStart}
+  </select>
+
+  <delete id="deleteExpiredRateLimits">
+    DELETE FROM identity_auth_rate_limits WHERE window_start &lt; #{before}
+  </delete>
+
+  <delete id="deleteExpiredOtps">
+    DELETE FROM identity_otp_codes WHERE expires_at &lt; #{before}
+  </delete>
+
+  <delete id="deleteDeletedUsersBefore">
+    DELETE FROM identity_users WHERE deleted_at IS NOT NULL AND deleted_at &lt; #{before}
+  </delete>
+</mapper>

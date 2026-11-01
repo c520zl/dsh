@@ -1,0 +1,23 @@
+spring:
+  datasource:
+    url: ${TEST_DATABASE_URL:jdbc:mysql://127.0.0.1:3306/todo_test?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${TEST_DATABASE_USERNAME:todo}
+    password: ${TEST_DATABASE_PASSWORD:todo}
+  flyway:
+    enabled: true
+    clean-disabled: false
+app:
+  worker:
+    enabled: false
+  limits:
+    per-minute: 100000
+    sync-per-minute: 100000
+  auth:
+    otp-resend-cooldown-seconds: 60
+    otp-ip-hourly-limit: 100000
+  mail:
+    driver: log
+  push:
+    enabled: false
+  export:
+    storage-dir: ./target/test-storage

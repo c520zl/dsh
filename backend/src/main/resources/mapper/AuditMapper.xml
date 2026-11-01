@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.AuditMapper">
+  <insert id="insert" parameterType="com.todoapp.auth.AuditLog">
+    INSERT INTO ops_audit_log (user_id, event, ip_hash, metadata)
+    VALUES (#{userId}, #{event}, #{ipHash}, #{metadata})
+  </insert>
+  <delete id="deleteBefore">
+    DELETE FROM ops_audit_log WHERE created_at &lt; #{before}
+  </delete>
+</mapper>

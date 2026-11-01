@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.todoapp.mapper.SyncMapper">
+  <insert id="insertSyncStateIfAbsent">
+    INSERT IGNORE INTO sync_user_sync_state (user_id, current_seq) VALUES (#{userId}, 0)
+  </insert>
+
+  <select id="selectSeqForUpdate" resultType="java.lang.Long">
+    SELECT current_seq FROM sync_user_sync_state WHERE user_id = #{userId} FOR UPDATE
+  </select>
+
+  <select id="selectCurrentSeq" resultType="java.lang.Long">
+    SELECT current_seq FROM sync_user_sync_state WHERE user_id = #{userId}
+  </select>
+
+  <update id="updateCurrentSeq">
+    UPDATE sync_user_sync_state SET current_seq = #{seq} WHERE user_id = #{userId}
+  </update>
+
+  <insert id="insertChangeLog" parameterType="com.todoapp.sync.ChangeLog">
+    INSERT INTO sync_change_log
+      (user_id, seq, entity_type, entity_id, entity_version, op, changed_fields, device_id)
+    VALUES
+      (#{userId}, #{seq}, #{entityType}, #{entityId}, #{entityVersion}, #{op},
+       #{changedFields}, #{deviceId})
+  </insert>
+
+  <select id="selectChanges" resultType="com.todoapp.sync.ChangeLog">
+    SELECT * FROM sync_change_log
+    WHERE user_id = #{userId} AND seq &gt; #{since}
+    ORDER BY seq ASC LIMIT #{limit}
+  </select>
+
+  <select id="selectOldestSeq" resultType="java.lang.Long">
+    SELECT MIN(seq) FROM sync_change_log WHERE user_id = #{userId}
+  </select>
+
+  <select id="selectEntityChangesSince" resultType="com.todoapp.sync.ChangeLog">
+    SELECT * FROM sync_change_log
+    WHERE user_id = #{userId} AND entity_type = #{entityType} AND entity_id = #{entityId}
+      AND entity_version &gt; #{baseVersion}
+  </select>
+
+  <delete id="deleteChangeLogBefore">
+    DELETE FROM sync_change_log WHERE created_at &lt; #{before}
+  </delete>
+
+  <select id="selectProcessedOp" resultType="com.todoapp.sync.ProcessedOp">
+    SELECT * FROM sync_processed_ops WHERE user_id = #{userId} AND op_id = #{opId}
+  </select>
+
+  <insert id="insertProcessedOp" parameterType="com.todoapp.sync.ProcessedOp">
+    INSERT INTO sync_processed_ops (user_id, op_id, result) VALUES (#{userId}, #{opId}, #{result})
+  </insert>
+
+  <delete id="deleteProcessedOpsBefore">
+    DELETE FROM sync_processed_ops WHERE created_at &lt; #{before}
+  </delete>
+</mapper>

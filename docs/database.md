@@ -5,11 +5,14 @@
 | 文档版本 | v1.0 |
 | 日期 | 2026-11-01 |
 | 状态 | 详细设计基线 |
-| 目标数据库 | PostgreSQL 18+（托管：Neon / RDS / Supabase） |
+| 目标数据库 | MySQL 8.0+（当前 Spring Boot 实现） |
 | 上游文档 | [`todo-app-design.md`](todo-app-design.md)、[`requirements.md`](requirements.md) |
-| 机器可执行 DDL | [`sql/001_init.sql`](sql/001_init.sql) |
+| 机器可执行 DDL | [`sql/001_init.mysql.sql`](sql/001_init.mysql.sql)（当前实现） |
 
-> 本文件描述表、字段、约束、索引、关键事务与保留策略；DDL 以 `sql/001_init.sql` 为准，二者不一致时先修 DDL 再更新本文档。
+> **实现说明（2026-11-02）**：后端已按最新要求切换为 Spring Boot 3 + JDK 17 + MySQL 8 + MyBatis-Plus（XML）；
+> 当前可执行 DDL 为 [`sql/001_init.mysql.sql`](sql/001_init.mysql.sql)，实现代码见 [`backend/`](../backend/)。
+> 下文保留原 PostgreSQL 设计基线（字段、约束、事务语义仍具参考价值）；schema 前缀在 MySQL 中映射为表名前缀，
+> `sync.*` 的函数改为应用层事务/行锁实现，Redis OTP 改为 MySQL 表。
 
 ## 1. 设计约定
 

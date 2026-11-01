@@ -1,0 +1,17 @@
+# Java / Maven
+backend/target/
+backend/storage/
+backend/test-storage/
+*.class
+
+# Local config / secrets
+.env
+.env.*
+!.env.example
+backend/.env
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
